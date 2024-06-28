@@ -3,10 +3,7 @@ use std::{
     process
 };
 
-use minigrep::{
-    self,
-    Config
-};
+use minigrep::Config;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

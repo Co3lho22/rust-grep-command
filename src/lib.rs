@@ -1,11 +1,13 @@
 use std::{
     error::Error,
     fs,
+    env,
 };
 
 pub struct Config {
     pub query: String,
     pub file_name: String,
+    pub case_sensitive: bool,
 }
 
 impl Config {
@@ -14,9 +16,12 @@ impl Config {
             return Err("Error: not enough argument!!")
         }
 
+        let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+
         Ok(Config {
             query: args[1].clone(),
             file_name: args[2].clone(),
+            case_sensitive,
         })
     }
 }
@@ -24,34 +29,32 @@ impl Config {
 pub fn run(grep_config: Config) -> Result<(), Box<dyn Error>>{
     let contents: String = fs::read_to_string(&grep_config.file_name)?;
 
-    for line in search(&grep_config.query, &contents) {
-        println!("{}", line);
-    }
+    let lines = if grep_config.case_sensitive {
+        search(&grep_config.query, &contents)
+    } else {
+       search_case_insensitive(&grep_config.query, &contents)
+    };
+
+    println!("{:#?}", lines);
 
     Ok(())
 }
 
 fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut lines_with_query: Vec<&str> = Vec::new();
-
-    for line in contents.lines() {
-        if line.contains(query) { lines_with_query.push(line); }
-    }
-
-    lines_with_query
+    contents.lines()
+            .filter(|line| line.contains(query))
+            .collect()
 }
 
 fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str>{
-    let mut lines_with_query = Vec::new();
+    // let mut lines_with_query = Vec::new();
     let query = query.to_lowercase();
 
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            lines_with_query.push(line);
-        }
-    }
-
-    lines_with_query
+     contents.lines()
+             .filter(|line| line.to_lowercase()
+                                .contains(&query)
+             )
+             .collect()
 }
 
 #[cfg(test)]
